@@ -1,0 +1,313 @@
+<!-- views/profile.ejs -->
+<!doctype html>
+<html>
+<head>
+	<title> Drop Net Home </title>
+	<!-- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css"> -->
+	<link rel="stylesheet" href="/css/bootstrap.min.css">
+	<link rel="stylesheet" href="/css/fa/css/font-awesome.min.css">
+	<!-- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css"> -->
+	<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js"></script>
+	<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script src='https://cdn.firebase.com/js/client/1.0.11/firebase.js'></script>
+	<style>
+		body 		{ padding-top:80px; word-wrap:break-word; }
+
+		#speech {
+		  -webkit-transform: scale(4,4)
+		}
+
+		#bigmic {
+			-webkit-transform: scale(7,7); 
+			opacity:1;
+			color: red; 
+			width:10px; 
+			border:none; 
+			margin-left:00px; 
+			margin-top:50px;
+			/*margin: auto;*/
+		}
+
+		#input-holders {
+			display: none;
+		}
+		#text-input {
+			margin-top: 100px;
+			border: none;
+			border-bottom: 1px solid grey;
+			height: 50px;
+			width: 250px;
+			font-size: 24px;
+		}
+		#back{
+			margin-bottom: 20px;
+			margin-right: 215px;
+			border: none;
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+
+	<div class="page-header text-center">
+		<h1 id="title"><span class="fa fa-users"></span> Drop Net </h1>
+		<!-- <a href="/logout" class="btn btn-default btn-sm">Logout</a> -->
+	</div>
+
+	<div id='button-holders' class='text-center'>
+		<button id='drop-btn' class="btn btn-primary btn-lg"><span class="fa fa-anchor"><br>Drop</button>
+		<button id='join-btn' class="btn btn-default btn-lg"><span class="fa fa-rocket"><br>Join</button>
+		<i class="fa fa-cloud-download"></i>
+	</div>
+	<div id='input-holders' class='text-center'>
+		<div>
+			<button id='back' class='btn btn-default'><span class="fa fa-arrow-left"></button>
+		</div>
+		<input speech="speech" x-webkit-speech="x-webkit-speech" id='bigmic'/>
+		<br>
+		<input id='text-input' placeholder="type here...">
+	</div>
+	<div>
+
+	</div>
+	<!-- <div id='join-input-holders' class='text-center'>
+		<input speech="speech" x-webkit-speech="x-webkit-speech" id='join-bigmic'/>
+		<br>
+		<input id='join-text-input' placeholder="type here...">
+	</div> -->
+
+	<!-- Speech Input 
+		<input id='test'>
+		<input speech="speech" x-webkit-speech="x-webkit-speech" id='speechtext'/>
+	 -->
+
+	
+
+	<!-- LinkedIn Profile <div class='row'>
+		<div class="col-sm-6">
+			<div class="well">
+				<h3 class="text-primary"><span class="fa fa-linkedin"></span> LinkedIn</h3>
+				<% if (user.linkedin.token) { %>
+					<p>
+						<strong>id</strong>: <%= user.linkedin.id %><br>
+						<strong>token</strong>: <%= user.linkedin.token %><br>
+						<strong>email</strong>: <%= user.linkedin.email %><br>
+						<strong>name</strong>: <%= user.linkedin.name %> <br>
+						<strong>headline</strong>: <%= user.linkedin.headline %> <br>
+						<strong>picture</strong>: <img src="<%= user.linkedin.picture %>"><br>
+					</p>
+
+					<a href="/unlink/linkedin" class="btn btn-primary">Unlink</a>
+				<% } else { %>
+					<a href="/connect/linkedin" class="btn btn-primary">Connect LinkedIn</a>
+				<% } %>
+
+			</div>
+		</div>
+	</div> -->
+</div>
+<script type="text/javascript">
+
+var myDataRef 	= new Firebase('https://anugc91865t.firebaseio-demo.com/');
+var roomsRef 	= myDataRef.child('rooms');
+var usersRef 	= myDataRef.child('users');
+var linkedID 	= "<%= user.linkedin.id %>"
+var linkedName 	= "<%= user.linkedin.name %>"
+var linkedEmail = "<%= user.linkedin.email %>"
+
+var current_activity;
+var existing_rooms = [];
+
+roomsRef.on('child_added', function(snap){
+	console.log('pushing ' + snap.val().Net_Name);
+	existing_rooms.push(snap.val().Net_Name)
+	existing_rooms.push(snap.val().Room_ID)
+})
+
+$(document).ready(function(){
+
+	var parseText = function(input){
+		//var existingroomnames = pluck(myDataRef, "roomname");
+		var now = Date.now();
+		var query_room = input.slice(9, input.length)
+
+	  	if ( /^drop net/.test(input) ){
+
+	  		if (existing_rooms.indexOf(query_room) !== -1) { 
+	  			//creating a new room
+		  		var newRoom = roomsRef.push();
+	  			newRoom.set({
+	  				Admin: linkedID,
+					AdminDisplay: linkedName,
+					AdminEmail: linkedEmail,
+					GPS: false,
+					Net_Name: $('#test').val(),
+					Room_ID: newRoom.name(),
+					created: now
+	  			})
+				$('#test').val('');
+
+	    		return 'Net created: ' + query_room;
+			} else {
+				// name taken. do something
+			}
+	  	}
+
+	  	else if ( /^join net/.test(input) ){
+	  		if (existing_rooms.indexOf(query_room) !== -1) {
+				//creating a new room
+				var target_room = existing_rooms.indexOf(query_room) + 1;
+				var guestlist = myDataRef.child('/rooms/' + target_room + '/guests');
+
+				guestlist.push({
+					visitor_id : linkedID,
+					visitor_name : linkedName,
+					visitor_email : linkedEmail
+
+				})
+
+	  			return 'Net joined: ' + query_room;
+	  		} else {
+	  			//net doesnt exist, do somethign
+	  		}
+	  	}
+	  	return false;
+	}
+
+	function handleNet (input) {
+		console.log('short Parsing');
+		var now = Date.now();
+		if (current_activity === 'drop') {
+			if (existing_rooms.indexOf(input) === -1) { 
+	  			//creating a new room
+		  		var newRoom = roomsRef.push();
+	  			newRoom.set({
+	  				Admin: linkedID,
+					AdminDisplay: linkedName,
+					AdminEmail: linkedEmail,
+					GPS: false,
+					Net_Name: input,
+					Room_ID: newRoom.name(),
+					created: now
+	  			})
+				$('#test').val('');
+	    		return 'Net created: ' + input;
+			} else {
+				// name taken. do something
+				console.log('index !== -1 aka net already exists');
+			}
+
+		};
+		if (current_activity === 'join') {
+			if (existing_rooms.indexOf(input) !== -1) { 
+	  			var fbid = existing_rooms[existing_rooms.indexOf(input)+1];
+				roomsRef.child(fbid + '/guests/').push({
+					gLinkedIn: linkedID,
+					gDisplayName: linkedName,
+					gEmail: linkedEmail,
+					added: now
+				})
+			} else {
+				// name taken. do something
+				console.log('index !== -1 aka net DOES NOT exists');
+			}
+		};
+	}
+
+
+  	function logger (stuff) {
+  		console.log(stuff);
+  		handleNet(stuff)
+  		//var state =parseText(stuff)
+	  		// if (state){
+	  		// 	$('body').append("<p class='bg-success'>"+state+"</div>");
+	  		// 	$('.bg-danger').remove();
+	  		// }
+	  		// else {
+	  		// 	$('body').append("<div class='bg-danger'>Unrecognised Command!</div>");
+	  		// }
+  		return stuff;
+  	}
+
+  	var throttlelogger = _.throttle(logger, 6000);
+
+	var timer;
+	$('#bigmic').on('input', function(){
+		console.log('...speech text processing');
+		$('#text-input').val($(this).val())
+		var that = this;
+		timer = setTimeout(function(){
+			throttlelogger($(that).val())	
+		}, 2000)
+	})
+
+	$('#test').keypress(function (e) {
+		parseText($(this).text())
+
+		// if (e.keyCode === 13) {
+
+		// 	var newRoom = roomsRef.push();
+  // 			newRoom.set({
+  // 				Admin: linkedID,
+		// 		AdminDisplay: linkedName,
+		// 		AdminEmail: linkedEmail,
+		// 		GPS: false,
+		// 		Net_Name: $('#test').val(),
+		// 		Room_ID: newRoom.name()
+  // 			})
+		
+		// 	$('#test').val('');
+		// };
+
+	}) 
+
+	$('#button-holders').on('click', 'button', function(){
+		current_activity = this.id.slice(0,4);
+		if (current_activity === 'drop') {
+			$('#title').html('<span class="fa fa-anchor"></span> Drop')
+		};
+		if (current_activity === 'join') {
+			$('#title').html('<span class="fa fa-rocket"></span> Join')
+		};
+		console.log('current_activity set to ' + current_activity);
+		$('#button-holders').hide('fast');
+		$('#input-holders').show();
+	})
+
+	$('#back').on('click', function () {
+		current_activity = '';
+		$('#input-holders').hide('fast');
+		$('#button-holders').fadeIn('fast');
+		$('#title').html('<span class="fa fa-users"></span> Drop Net')
+		console.log('clicked: #back');
+	})
+
+	$('#text-input').keypress(function(e) {
+		if (e.keyCode === 13) {
+			current_activity = this.id.slice(0,4)
+			handleNet($(this).text());
+			console.log('enter pressed');
+		}
+		$(this).text('')
+	})
+
+}) // --- closes document ready ---
+
+var fade = function (node) {
+	var level 	= 1;
+	var step 	= function () {
+		var hex = level.toString(16);
+		node.style.backgroundColor = '#FFFF' + hex + hex;
+		if (level < 15) {
+			level += 1;
+			setTimeout(step, 100);
+		}
+	};
+	setTimeout(step, 100);
+};
+//fade(document.body)
+
+	
+</script>
+</body>
+</html>
